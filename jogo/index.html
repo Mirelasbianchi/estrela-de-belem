@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1838">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>A Estrela de Belém · Jogo</title>
+<meta name="description" content="Um jogo de Natal em 3D: acompanhe a história de Jesus da Anunciação até a Noite Santa.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- Carregando -->
+<div id="loading" class="screen">
+  <div class="loader-star">✦</div>
+  <p>Preparando Nazaré...</p>
+</div>
+
+<!-- Menu principal -->
+<div id="menu" class="screen hidden">
+  <div class="menu-inner">
+    <p class="sub">Da Anunciação à Noite Santa</p>
+    <h1 class="title">A Estrela<br>de Belém</h1>
+    <div id="wreath"></div>
+    <p id="wreathCaption" class="caption"></p>
+    <div class="menu-buttons">
+      <button class="btn" id="bPlay">Começar a jornada</button>
+      <button class="btn ghost" id="bChapters">Capítulos</button>
+      <button class="btn ghost" id="bPresepio">Meu Presépio</button>
+      <button class="btn ghost" id="bHow">Como jogar</button>
+    </div>
+  </div>
+  <button class="icon-btn corner" id="bSound" aria-label="Som">♪</button>
+  <a class="back-site" href="../">← Voltar ao site</a>
+</div>
+
+<!-- Modal genérico -->
+<div id="modal" class="screen hidden">
+  <div class="panel">
+    <div id="modalBody"></div>
+    <div class="panel-actions"><button class="btn" id="modalClose">Fechar</button></div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="quests"></div>
+  <div id="stars"><span class="st">★</span> <span id="starCount">0/0</span></div>
+  <button class="icon-btn" id="bPause" aria-label="Pausar">❚❚</button>
+  <div id="arrow"><div class="arrow-shape"></div></div>
+</div>
+
+<!-- Prompt de interação (desktop) -->
+<div id="prompt" class="hidden"></div>
+
+<!-- Controles touch -->
+<div id="touch" class="hidden">
+  <div id="joy"><div id="knob"></div></div>
+  <button id="btnAct" class="hidden">Falar</button>
+  <button id="btnJump" aria-label="Voar">
+    <svg viewBox="0 0 48 48" width="38" height="38"><path d="M24 30c-6-10-14-12-20-10 5 2 7 6 8 10-4-1-7 0-9 2 6 1 13 1 21-2zM24 30c6-10 14-12 20-10-5 2-7 6-8 10 4-1 7 0 9 2-6 1-13 1-21-2z" fill="#fff"/></svg>
+  </button>
+</div>
+
+<!-- Diálogo -->
+<div id="dialogCatch" class="hidden"></div>
+<div id="dialog" class="hidden">
+  <div id="dlgName"></div>
+  <div id="dlgText"></div>
+  <div id="dlgNext">▼</div>
+</div>
+
+<!-- Cartões -->
+<div id="titlecard" class="hidden">
+  <div class="tc-kicker"></div>
+  <div class="tc-title"></div>
+  <div class="tc-sub"></div>
+</div>
+<div id="card" class="screen hidden">
+  <div class="panel card-panel"><div id="cardBody"></div>
+  <div class="panel-actions"><button class="btn" id="cardBtn">Continuar</button></div></div>
+</div>
+
+<div id="toast" class="hidden"></div>
+<div id="fade"></div>
+
+<!-- Pausa -->
+<div id="pause" class="screen hidden">
+  <div class="panel center">
+    <h2>Pausado</h2>
+    <button class="btn" id="pResume">Continuar</button>
+    <button class="btn ghost" id="pSound">Som: ligado</button>
+    <button class="btn ghost" id="pHow">Como jogar</button>
+    <button class="btn ghost" id="pMenu">Menu principal</button>
+  </div>
+</div>
+
+<div id="error" class="screen hidden"><div class="panel center"><h2>Ops!</h2><p>Seu navegador não conseguiu iniciar o 3D (WebGL). Tente atualizar a página ou abrir no Chrome/Safari mais recente.</p></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
