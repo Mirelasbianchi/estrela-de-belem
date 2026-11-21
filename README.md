@@ -16,4 +16,5 @@ Depois abra http://localhost:8123/jogo/
 ## Status
 
 - Capítulo 1 · A Anunciação: jogável
-- Capítulos 2 a 7: em breve
+- Capítulo 2 · O Sonho de José: jogável
+- Capítulos 3 a 7: em breve (um por dia)

@@ -1,7 +1,7 @@
 // Motor principal: renderização, câmera, estados (menu / jogo / pausa) e capítulos.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { World, terrainHeight, clamp } from './world.js';
+import { World, terrainHeight, clamp, setTerrain } from './world.js';
 import { Player } from './player.js';
 import { input, initInput, pollInput, consume } from './input.js';
 import { ui, wreathSVG } from './ui.js';
@@ -9,8 +9,10 @@ import { initAudio, sfx, startMusic, stopMusic, setSound } from './audio.js';
 import { save, persist } from './save.js';
 import { CHAPTERS, CANDLE_CHAPTERS, CHRIST_CANDLE } from './chapters.js';
 import * as ch1 from './chapters/ch1.js';
+import * as ch2 from './chapters/ch2.js';
 
-const BUILDERS = { 1: ch1 };
+// Um capítulo novo por vez: adicione aqui e marque ready: true em chapters.js
+const BUILDERS = { 1: ch1, 2: ch2 };
 const $ = id => document.getElementById(id);
 
 // ---------- Renderer ----------
@@ -132,6 +134,7 @@ function buildChapter(n) {
   disposeScene(scene);
   if (activeCtx) activeCtx.alive = false;
   tweens.length = 0;
+  setTerrain(BUILDERS[n].TERRAIN || {});
   scene = new THREE.Scene();
   scene.environment = envTex;
   world = new World(scene);
@@ -142,7 +145,7 @@ function buildChapter(n) {
     startMusic, stopMusic,
     interact(o) { interactables.push(o); return o; },
     lock(v) { locked = v; if (!v) actBlock = time + 0.35; if (v) ui.hidePrompt(); },
-    finish: () => finishChapter(n),
+    finish: next => finishChapter(n, next),
     get time() { return time; },
     alive: true,
   };
@@ -163,10 +166,11 @@ async function playChapter(n) {
   await chapter.start();
 }
 
-async function finishChapter(n) {
+async function finishChapter(n, next) {
   mode = 'menu'; locked = true;
   ui.hide('hud'); ui.hide('touch'); ui.hidePrompt();
   await ui.fade(1, 0.8);
+  if (next && BUILDERS[next]) { playChapter(next); return; }
   buildChapter(1);
   enterMenu();
   await ui.fade(0, 1.2);
@@ -200,11 +204,14 @@ $('bPlay').onclick = () => {
   if (n) playChapter(n);
   else {
     initAudio();
-    ui.modal(`<h2>Até aqui, tudo concluído!</h2>
-      <p>Você terminou todos os capítulos disponíveis. O <b>Capítulo 2 · O Sonho de José</b> chega em breve.</p>
-      <p>Enquanto isso, que tal voltar a Nazaré e encontrar todas as estrelas escondidas?</p>
-      <div class="panel-actions"><button class="btn" id="replay1">Jogar o Capítulo 1 de novo</button></div>`);
-    $('replay1').onclick = () => playChapter(1);
+    const soon = CHAPTERS.find(c => !c.ready);
+    ui.modal(soon ? `<h2>Até aqui, tudo concluído!</h2>
+      <p>Você terminou todos os capítulos disponíveis. O <b>Capítulo ${soon.n} · ${soon.title}</b> chega em breve.</p>
+      <p>Enquanto isso, que tal voltar e encontrar todas as estrelas escondidas?</p>` : `<h2>Feliz Natal! 🌟</h2>
+      <p>Você completou toda a jornada, da Anunciação até a Noite Santa, e o seu presépio está completo.</p>
+      <p>Que tal voltar aos capítulos e encontrar todas as estrelas escondidas?</p>
+      <div class="panel-actions"><button class="btn" id="replay1">Escolher um capítulo</button></div>`);
+    $('replay1').onclick = () => $('bChapters').onclick();
   }
 };
 $('bChapters').onclick = () => {
@@ -330,6 +337,7 @@ function frame() {
   renderer.render(scene, camera);
 }
 // usado em testes: avança a simulação sem depender do requestAnimationFrame
+window.__play = n => playChapter(n);
 window.__step = (n = 60) => { for (let i = 0; i < n; i++) tick(1 / 60); renderer.render(scene, camera); };
 function tick(dt) {
   pollInput();

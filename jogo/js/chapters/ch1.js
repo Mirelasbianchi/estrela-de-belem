@@ -367,8 +367,8 @@ export function build(ctx) {
       <p>Estrelas encontradas: <b>${stars.count}/${stars.total}</b>${stars.count < stars.total ? '<br><small>Jogue de novo para achar todas!</small>' : ' 🌟 Todas!'}</p>
       <div class="mini-wreath">${wreathSVG([true, s.completed.includes(3), s.completed.includes(5), s.completed.includes(6)], s.completed.includes(7))}</div>
       <p>${first ? 'A <b>1ª vela do Advento</b> foi acesa: a vela da esperança.' : 'A 1ª vela do Advento continua acesa.'}</p>
-      <p><small>Próximo: <b>Capítulo 2 · O Sonho de José</b> (em breve)</small></p>`, 'Voltar ao menu'));
-    ctx.finish();
+      <p><small>Próximo: <b>Capítulo 2 · O Sonho de José</b></small></p>`, 'Próximo capítulo ▶'));
+    ctx.finish(2);
   }
 
   // ---------- Loop ----------

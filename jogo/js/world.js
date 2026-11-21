@@ -19,12 +19,16 @@ export function rng(seed = 1) {
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
 // ---------- Terreno ----------
+// Cada capítulo pode mudar as colinas (hills: [x, z, altura, largura²]), o raio da parte plana e o anel de montanhas.
+const TDEF = { hills: [[36, 18, 5.5, 150]], flat: 12, ring: 58, bumps: 1 };
+let T = TDEF;
+export function setTerrain(o = {}) { T = { ...TDEF, ...o }; }
 export function terrainHeight(x, z) {
   const r = Math.hypot(x, z);
-  let h = 0.8 * Math.sin(x * 0.07) * Math.cos(z * 0.06) + 0.4 * Math.sin(x * 0.19 + 1.3) * Math.sin(z * 0.15 + 0.4);
-  h *= 0.25 + 0.75 * smooth(12, 30, r);
-  h += 5.5 * Math.exp(-((x - 36) ** 2 + (z - 18) ** 2) / 150);
-  h += smooth(58, 92, r) * 11;
+  let h = (0.8 * Math.sin(x * 0.07) * Math.cos(z * 0.06) + 0.4 * Math.sin(x * 0.19 + 1.3) * Math.sin(z * 0.15 + 0.4)) * T.bumps;
+  h *= 0.25 + 0.75 * smooth(T.flat, T.flat + 18, r);
+  for (const [hx, hz, hh, w] of T.hills) h += hh * Math.exp(-((x - hx) ** 2 + (z - hz) ** 2) / w);
+  h += smooth(T.ring, T.ring + 34, r) * 11;
   return h;
 }
 
@@ -228,6 +232,16 @@ export function sheepModel() {
   return ART.compact(g);
 }
 
+// Céus: entardecer (capítulo 1), dia claro e noite estrelada
+const SKIES = {
+  dusk: { bg: '#2b3b78', fog: '#5a6eae', fogNear: 38, fogFar: 220, top: '#0b1745', mid: '#3f62b3', warm: '#f7ab6c', cool: '#86a0d8', sun: [-0.75, 0.12, -0.65], sunC: '#ff9e52',
+    hemi: ['#c3d3ff', '#545a96', 1.5], sunL: ['#ffbf86', 2.3], fill: 0.9, stars: 0.9, starSize: 1.8, mount: '#4a5c99' },
+  day: { bg: '#8fb6ea', fog: '#c4d6f2', fogNear: 45, fogFar: 240, top: '#2c68c9', mid: '#78aaea', warm: '#fff1d6', cool: '#cfe0f7', sun: [-0.45, 0.55, -0.55], sunC: '#fff2c4',
+    hemi: ['#e8f0ff', '#7a86b0', 1.75], sunL: ['#fff0da', 2.7], fill: 0.8, stars: 0, starSize: 1.8, mount: '#6a7fb8' },
+  night: { bg: '#0b1435', fog: '#1d2b5e', fogNear: 30, fogFar: 180, top: '#02061a', mid: '#0e1c4f', warm: '#33407e', cool: '#1f2c66', sun: [0.35, 0.3, -0.88], sunC: '#c9d6ff',
+    hemi: ['#8ea3e6', '#232a5a', 0.85], sunL: ['#b4c4ff', 1.0], fill: 0.35, stars: 1, starSize: 2.2, mount: '#2c3a72' },
+};
+
 // ---------- Mundo ----------
 export class World {
   constructor(scene) {
@@ -261,27 +275,28 @@ export class World {
     }
   }
 
-  buildEnvironment({ path = [] } = {}) {
+  buildEnvironment({ path = [], sky = 'dusk', snowfall = true } = {}) {
     const scene = this.scene;
-    scene.background = new THREE.Color('#2b3b78');
-    scene.fog = new THREE.Fog('#5a6eae', 38, 220);
+    const P = SKIES[sky] || SKIES.dusk; this.skyName = sky;
+    scene.background = new THREE.Color(P.bg);
+    scene.fog = new THREE.Fog(P.fog, P.fogNear, P.fogFar);
 
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
       uniforms: {
-        top: { value: new THREE.Color('#0b1745') }, mid: { value: new THREE.Color('#3f62b3') },
-        warm: { value: new THREE.Color('#f7ab6c') }, cool: { value: new THREE.Color('#86a0d8') },
-        sunDir: { value: new THREE.Vector3(-0.75, 0.12, -0.65).normalize() }
+        top: { value: new THREE.Color(P.top) }, mid: { value: new THREE.Color(P.mid) },
+        warm: { value: new THREE.Color(P.warm) }, cool: { value: new THREE.Color(P.cool) },
+        sunDir: { value: new THREE.Vector3(...P.sun).normalize() }, sunC: { value: new THREE.Color(P.sunC) }
       },
       vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-      fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 warm; uniform vec3 cool; uniform vec3 sunDir; varying vec3 vP;
+      fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 warm; uniform vec3 cool; uniform vec3 sunDir; uniform vec3 sunC; varying vec3 vP;
         void main(){
           float y = vP.y; float s = max(dot(vP, sunDir), 0.0);
           vec3 hor = mix(cool, warm, pow(s, 1.6));
           vec3 c = mix(hor, mid, smoothstep(0.0, 0.32, y));
           c = mix(c, top, smoothstep(0.3, 0.85, y));
           if (y < 0.0) c = hor * 0.75;
-          c += vec3(1.0, 0.62, 0.32) * pow(s, 18.0) * 0.55;
+          c += sunC * pow(s, 18.0) * 0.55;
           gl_FragColor = vec4(c, 1.0);
           #include <colorspace_fragment>
         }`
@@ -295,12 +310,12 @@ export class World {
       sp.push(Math.cos(th) * rr * 420, y * 420, Math.sin(th) * rr * 420);
     }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
-    this.skyStars = new THREE.Points(sg, new THREE.PointsMaterial({ color: '#fff8e6', size: 1.8, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.9, depthWrite: false }));
+    this.skyStars = new THREE.Points(sg, new THREE.PointsMaterial({ color: '#fff8e6', size: P.starSize, sizeAttenuation: false, fog: false, transparent: true, opacity: P.stars, depthWrite: false }));
     scene.add(this.skyStars);
 
-    scene.add(new THREE.HemisphereLight('#c3d3ff', '#545a96', 1.5));
-    const sun = new THREE.DirectionalLight('#ffbf86', 2.3); sun.position.set(-80, 40, -60); scene.add(sun);
-    const fill = new THREE.DirectionalLight('#9fb4ff', 0.9); fill.position.set(60, 50, 70); scene.add(fill);
+    scene.add(new THREE.HemisphereLight(P.hemi[0], P.hemi[1], P.hemi[2]));
+    const sun = new THREE.DirectionalLight(P.sunL[0], P.sunL[1]); sun.position.set(P.sun[0] * 100, Math.max(25, P.sun[1] * 100), P.sun[2] * 100); scene.add(sun);
+    const fill = new THREE.DirectionalLight('#9fb4ff', P.fill); fill.position.set(60, 50, 70); scene.add(fill);
 
     const geo = new THREE.PlaneGeometry(280, 280, 160, 160); geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position; const col = new Float32Array(pos.count * 3);
@@ -329,10 +344,10 @@ export class World {
     for (let i = 0; i < 34; i++) {
       const a = i / 34 * Math.PI * 2 + RM() * 0.1, d = 140 + RM() * 50, h = 30 + RM() * 45, r = 28 + RM() * 26;
       const c = new THREE.ConeGeometry(r, h, 10, 4); c.translate(Math.cos(a) * d, h / 2 - 2, Math.sin(a) * d);
-      paintY(c, '#4a5c99', '#e9effc', h * 0.45 - 2, h * 0.12); mparts.push(c);
+      paintY(c, P.mount, '#e9effc', h * 0.45 - 2, h * 0.12); mparts.push(c);
     }
     scene.add(new THREE.Mesh(merge(mparts), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, envMapIntensity: 0.2 })));
-    this.buildSnow();
+    if (snowfall) this.buildSnow();
   }
 
   buildSnow(n = 1300) {
@@ -855,3 +870,4 @@ export class World {
     for (const f of this.anims) f(t, dt);
   }
 }
+export { plankMat, RB };

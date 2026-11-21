@@ -35,7 +35,7 @@ function irisTexture(color) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; irisTex.set(color, t); return t;
 }
 // Olhinho de brinquedo: oval escuro com brilhos (estilo fofo, nada de olho "realista")
-function eye(R, sx, iris, size, o) {
+export function eye(R, sx, iris, size, o) {
   const g = new THREE.Group();
   const dir = new THREE.Vector3(sx * Math.sin(0.4), -0.1, Math.cos(0.4)).normalize();
   g.position.copy(dir).multiplyScalar(R * 0.96);
