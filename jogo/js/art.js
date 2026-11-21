@@ -60,7 +60,8 @@ function headGeometry(R, male) {
   const prof = male
     ? [[0, 1.0], [0.45, 0.93], [0.78, 0.7], [0.96, 0.38], [1.0, 0.06], [1.0, -0.22], [0.95, -0.48], [0.82, -0.72], [0.56, -0.9], [0, -0.96]]
     : [[0, 1.0], [0.45, 0.93], [0.78, 0.7], [0.96, 0.38], [1.0, 0.06], [1.01, -0.2], [0.96, -0.45], [0.8, -0.68], [0.5, -0.86], [0, -0.92]];
-  const g = new THREE.LatheGeometry(prof.map(([x, y]) => new THREE.Vector2(x * R, y * R)), 48);
+  // de baixo para cima: assim as faces apontam para fora (senão o rosto fica "transparente")
+  const g = new THREE.LatheGeometry(prof.slice().reverse().map(([x, y]) => new THREE.Vector2(x * R, y * R)), 48);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
