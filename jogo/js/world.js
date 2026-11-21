@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import * as ART from './art.js';
 
-export { setWings, reindeerModel, animateReindeer } from './art.js';
+export { setWings, reindeerModel, animateReindeer, animateChar } from './art.js';
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };

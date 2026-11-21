@@ -1,7 +1,7 @@
 // Capítulo 1 · A Anunciação (Lc 1,26-38). Nazaré da Galileia, ao entardecer.
 import * as THREE from 'three';
 import {
-  terrainHeight as H, person, gabrielModel, doveModel, sheepModel, lilyModel, glow, decal, rng, setWings, V, reindeerModel, animateReindeer,
+  terrainHeight as H, person, gabrielModel, doveModel, sheepModel, lilyModel, glow, decal, rng, setWings, V, reindeerModel, animateReindeer, animateChar,
 } from '../world.js';
 import { CHAPTERS } from '../chapters.js';
 import { wreathSVG } from '../ui.js';
@@ -188,17 +188,7 @@ export function build(ctx) {
 
   // ---------- Diálogos ----------
   npc({
-    name: 'Ana', x: 2.7, z: 2.6, face: Math.PI * 0.75, look: { color: '#c8262f', fur: '#ffffff', belt: '#2e7d3c', boots: '#c8262f', tights: '#f6cfb0', hair: { color: '#d9b46a', style: 'long' }, eyes: '#8a6a2a', hat: true, lashes: true, skin: '#f6cfb0', s: 0.85 },
-    lines: () => [
-      { who: 'Ana', text: 'Oi! Você é um anjo de verdade?! Eu sou a Ana!' },
-      { who: 'Ana', text: 'Sabia que a Maria mora lá no norte, no fim do caminho, perto das oliveiras? Ela é tão bondosa... sempre me ajuda a carregar água do poço.' },
-      { who: 'Ana', text: 'Ela reza todos os dias quando o céu fica dourado. Minha mãe diz que nunca viu um coração tão cheio de Deus.' },
-      { who: 'Ana', text: 'Ah! Tem uma lamparina apagada bem aqui do lado do poço. Você consegue acender?' },
-    ],
-    again: () => [{ who: 'Ana', text: ['Você voa?! Me ensina?', 'Dizem que tem estrelas escondidas em cima dos telhados... será?', 'Quando eu crescer quero ser bondosa igual a Maria.'][Math.floor(Math.random() * 3)] }],
-  });
-  npc({
-    name: 'Rúben', x: -19.6, z: 11.2, face: Math.PI / 2, look: { color: '#6d6aa0', sash: '#c99b5a', long: true, hair: { color: '#4a3426', style: 'short' }, beard: '#4a3426', eyes: '#3b2a1a', skin: '#e2b08a', s: 1.05 },
+    name: 'Rúben', x: -19.6, z: 11.2, face: Math.PI / 2, look: { color: '#6d6aa0', sash: '#c99b5a', long: true, male: true, hair: { color: '#4a3426', style: 'short' }, beard: '#4a3426', eyes: '#3b2a1a', skin: '#e2b08a', s: 1.05 },
     lines: () => [
       { who: 'Rúben', text: 'Shalom, pequeno! Esta é a oficina de José, o carpinteiro. Ele está noivo da Maria.' },
       { who: 'Rúben', text: 'José é um homem justo: trabalhador, honesto e de poucas palavras. Faz as melhores mesas da Galileia!' },
@@ -220,7 +210,7 @@ export function build(ctx) {
     after: () => { lilies[1].known = true; },
   });
   npc({
-    name: 'Natan', x: -24, z: 25, face: -Math.PI / 2, look: { color: '#9a7448', belt: '#6b4a2e', boots: '#6b4a2e', tights: '#c9a27a', hair: { color: '#3a2618', style: 'short' }, eyes: '#4a3020', skin: '#dba67e', staff: true, s: 0.88 },
+    name: 'Natan', x: -24, z: 25, face: -Math.PI / 2, look: { color: '#9a7448', belt: '#6b4a2e', male: true, boots: '#6b4a2e', tights: '#c9a27a', hair: { color: '#3a2618', style: 'short' }, eyes: '#4a3020', skin: '#dba67e', staff: true, s: 0.88 },
     lines: () => [
       { who: 'Natan', text: 'Ei! Devagar, para não assustar minhas ovelhas! Eu sou Natan, pastor igual ao meu avô.' },
       { who: 'Natan', text: 'Meu avô diz que o Messias vai ser descendente do rei Davi, que também era pastor, lá em Belém. Já imaginou? Um rei pastor!' },
@@ -279,7 +269,7 @@ export function build(ctx) {
       cam.follow();
       stage = 1; refresh();
       ctx.lock(false);
-      ui.toast(ctx.input.touch ? 'Joystick: andar e virar · Arraste à direita: girar · Botão de asas: voar' : 'W/S: andar · A/D: virar · Espaço: pular/voar · E: conversar', 6);
+      ui.toast(ctx.input.touch ? 'Joystick: andar e virar · Arraste à direita: girar · Botão de asas: voar' : 'W/S: andar · A/D: virar · Espaço/Enter: voar · E: conversar · ? regras · 💡 dica', 6);
     } catch (e) { /* capítulo encerrado */ }
   }
 
@@ -408,8 +398,11 @@ export function build(ctx) {
       const target = d < 7 && playing ? Math.atan2(dx, dz) : n.base;
       let a = target - n.model.rotation.y; a = Math.atan2(Math.sin(a), Math.cos(a));
       n.model.rotation.y += a * Math.min(1, dt * 4);
-      n.model.position.y = H(n.x, n.z) + Math.abs(Math.sin(t * 1.5 + n.x)) * 0.02;
+      n.model.position.y = H(n.x, n.z);
+      animateChar(n.model, t, dt, { talk: ui.speaker === n.name });
     }
+    animateChar(mary, t, dt, { talk: ui.speaker === MARIA });
+    if (gabriel.visible) animateChar(gabriel, t, dt, { talk: ui.speaker === G, air: true });
     deer.forEach((r, i) => animateReindeer(r, t + i * 2, 0));
     sheep.forEach((s, i) => { s.rotation.y += Math.sin(t * 0.3 + i) * 0.003; s.position.y = H(s.position.x, s.position.z) + Math.abs(Math.sin(t * 2 + i)) * 0.03; });
     // Gabriel flutuando
@@ -437,5 +430,20 @@ export function build(ctx) {
     }
   }
 
-  return { start, update };
+  // Dica do botão 💡
+  const LAMP_TIP = ['ao lado do poço, na praça', 'perto da oficina de José', 'perto da cerca das ovelhas', 'a leste, no caminho da colina', 'no caminho para a casa de Maria, ao norte'];
+  const LILY_TIP = ['em cima do telhado da oficina de José: pule e bata as asas várias vezes', 'na colina a leste, entre as oliveiras', 'no bosque de pinheiros a sudoeste'];
+  function hint() {
+    if (stage === 0 || cutscene) return 'Acompanhe a conversa com o anjo Gabriel.';
+    if (stage === 2) return 'Siga o caminho de terra para o norte até a casa de Maria, perto das oliveiras.';
+    if (stage === 1) {
+      const li = lilies.findIndex(l => !l.taken);
+      const la = lamps.findIndex(l => !l.lit);
+      if (li >= 0 && (la < 0 || Math.random() < 0.5)) return `Tem um lírio ${LILY_TIP[li]}.`;
+      if (la >= 0) return `Tem uma lamparina apagada ${LAMP_TIP[la]}. Chegue perto e aperte E.`;
+    }
+    return 'Siga a seta dourada no alto da tela.';
+  }
+
+  return { start, update, hint };
 }

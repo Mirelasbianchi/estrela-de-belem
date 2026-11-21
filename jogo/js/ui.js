@@ -18,24 +18,24 @@ export const ui = {
       const showLine = () => {
         const l = typeof lines[i] === 'string' ? { who: null, text: lines[i] } : lines[i];
         name.textContent = l.who || ''; text.classList.toggle('narr', !l.who);
-        full = l.text; shown = 0; text.textContent = ''; next.style.visibility = 'hidden';
+        ui.speaker = l.who || null; full = l.text; shown = 0; text.textContent = ''; next.style.visibility = 'hidden';
         clearInterval(typing);
         typing = setInterval(() => {
           shown += 2; text.textContent = full.slice(0, shown);
           if (shown % 6 === 0) sfx.blip();
-          if (shown >= full.length) { clearInterval(typing); typing = null; next.style.visibility = 'visible'; }
+          if (shown >= full.length) { clearInterval(typing); typing = null; ui.speaker = null; next.style.visibility = 'visible'; }
         }, 24);
       };
       const advance = () => {
         if (performance.now() - openedAt < 250) return;
-        if (typing) { clearInterval(typing); typing = null; text.textContent = full; next.style.visibility = 'visible'; return; }
+        if (typing) { clearInterval(typing); typing = null; ui.speaker = null; text.textContent = full; next.style.visibility = 'visible'; return; }
         i++;
         if (i >= lines.length) { cleanup(); resolve(); } else showLine();
       };
       const onKey = e => { if (['Space', 'Enter', 'KeyE'].includes(e.code) && !e.repeat) { e.preventDefault(); advance(); } };
       const onClick = e => { e.preventDefault(); advance(); };
       const cleanup = () => {
-        clearInterval(typing); ui._cleanup = null;
+        clearInterval(typing); ui._cleanup = null; ui.speaker = null;
         ui.hide('dialog'); ui.hide('dialogCatch');
         removeEventListener('keydown', onKey); box.removeEventListener('pointerdown', onClick); $('dialogCatch').removeEventListener('pointerdown', onClick);
         input.jumpPressed = false; input.actPressed = false;

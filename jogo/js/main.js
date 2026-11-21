@@ -49,6 +49,29 @@ const cam = {
   cut(p, l) { this.mode = 'shot'; this.tPos.copy(p); this.tLook.copy(l); this.pos.copy(p); this.look.copy(l); },
   snap() { this._snap = true; },
 };
+const _cp = new THREE.Vector3();
+function camBlock(a, b) {
+  // fração do caminho a→b livre de colisores (caixas das casas, com margem para telhado e parede)
+  if (!world) return 1;
+  const N = 28, p = new THREE.Vector3();
+  // volume aproximado da casa: paredes + beiral (1 m) + telhado em "pirâmide" até a cumeeira
+  const inside = (q, bx) => {
+    const out = Math.max(Math.abs(q.x - bx.x) - bx.hw, Math.abs(q.z - bx.z) - bx.hd);
+    if (out > 1.0) return false;
+    const limit = bx.top + 0.6 + 2.1 * clamp(-out / Math.min(bx.hw, bx.hd), 0, 1);
+    if (q.y > limit) return false;
+    if (out > 0.45 && q.y < bx.top - 1.7) return false;
+    return true;
+  };
+  const boxes = world.boxes.filter(bx => !inside(a, bx) && bx.hw + bx.hd > 1.2);
+  for (let i = 1; i <= N; i++) {
+    const t = i / N; p.lerpVectors(a, b, t);
+    for (const bx of boxes) {
+      if (inside(p, bx)) return (i - 1) / N - 0.02;
+    }
+  }
+  return 1;
+}
 function updateCam(dt) {
   if (cam.mode === 'follow') {
     if (!locked) cam.pitch = clamp(cam.pitch + input.camDY * 0.004, -0.05, 0.9);
@@ -57,11 +80,29 @@ function updateCam(dt) {
     cam.yaw += cam._snap ? d : d * (1 - Math.exp(-dt * 7));
     const tgt = player.pos.clone(); tgt.y += 1.6;
     const dist = camera.aspect < 1 ? cam.dist * 1.25 : cam.dist;
-    const cp = Math.cos(cam.pitch);
-    cam.tPos.set(tgt.x + Math.sin(cam.yaw) * cp * dist, tgt.y + Math.sin(cam.pitch) * dist, tgt.z + Math.cos(cam.yaw) * cp * dist);
+    const place = (pitch, d, out) => { const cp = Math.cos(pitch); return out.set(tgt.x + Math.sin(cam.yaw) * cp * d, tgt.y + Math.sin(pitch) * d, tgt.z + Math.cos(cam.yaw) * cp * d); };
+    // se uma casa estiver atrás da anjinha, a câmera sobe por cima do telhado em vez de entrar na parede
+    let need = 0, best = -1, bestF = 0;
+    for (const extra of [0, 0.3, 0.6, 0.9, 1.15]) {
+      const fr = camBlock(tgt, place(cam.pitch + extra, dist, _cp));
+      if (fr > bestF + 0.05) { bestF = fr; best = extra; }
+      if (fr >= 1) break;
+    }
+    need = best < 0 ? 0 : best;
+    cam.extra = cam.extra || 0;
+    cam.extra += (need - cam.extra) * Math.min(1, dt * (need > cam.extra ? 10 : 2.5));
+    if (cam._snap) cam.extra = need;
+    place(Math.min(1.35, cam.pitch + cam.extra), dist, cam.tPos);
     const gh = terrainHeight(cam.tPos.x, cam.tPos.z) + 0.7; if (cam.tPos.y < gh) cam.tPos.y = gh;
+    const f = camBlock(tgt, cam.tPos);
+    const blocked = f < 1;
+    if (blocked) cam.tPos.lerpVectors(tgt, cam.tPos, Math.max(0.3 / dist, f));
+    // câmera colada na anjinha (encostada numa parede): esconde a anjinha para não atrapalhar a visão
+    const close = cam.tPos.distanceTo(tgt) < 1.1;
+    player.model.visible = !close;
     cam.tLook.copy(tgt);
-    const k = cam._snap ? 1 : 1 - Math.exp(-dt * 9);
+    if (close) cam.tLook.add(_cp.set(Math.sin(player.facing) * 3, 0, Math.cos(player.facing) * 3));
+    const k = cam._snap || blocked ? 1 : 1 - Math.exp(-dt * 9);
     cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, cam._snap ? 1 : 1 - Math.exp(-dt * 14));
   } else if (cam.mode === 'orbit') {
     cam.orbitA += dt * 0.045;
@@ -70,6 +111,7 @@ function updateCam(dt) {
     const k = cam._snap ? 1 : 1 - Math.exp(-dt * 1.5);
     cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   } else {
+    if (player && mode === 'play') player.model.visible = true;
     const k = cam._snap ? 1 : 1 - Math.exp(-dt * cam.speed);
     cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   }
@@ -185,21 +227,65 @@ $('bPresepio').onclick = () => {
       return `<div class="piece ${got ? 'got' : ''}"><div class="ic">${got ? '✦' : '?'}</div><div class="n">${got ? c.piece : '???'}</div><div class="c">Capítulo ${c.n}</div></div>`;
     }).join('') + `</div>`);
 };
-const HOW = `<h2>Como jogar</h2>
-  <p>Você é um <b>anjinha mensageira</b> enviado do Céu para ajudar a preparar a chegada de Jesus.</p>
+const HOW = `<h2>Regras do jogo</h2>
+  <p>Você é a <b>anjinha mensageira</b>, enviada do Céu para ajudar a preparar a chegada de Jesus. São 7 capítulos, da Anunciação à Noite Santa.</p>
+  <h3>Objetivo</h3>
+  <ul class="rules">
+    <li>Cada capítulo tem <b>missões</b> (lista no canto de cima). Cumpra todas para a história continuar.</li>
+    <li>A <b>seta dourada</b> no alto da tela aponta para a próxima missão.</li>
+    <li>Converse com os moradores: eles dão pistas de onde estão as coisas.</li>
+    <li>As <b>estrelas</b> são opcionais e ficam escondidas, muitas em cima dos telhados. Junte todas!</li>
+    <li>Ao terminar um capítulo você ganha uma <b>peça do presépio</b> e uma <b>vela do Advento</b> pode acender.</li>
+    <li>Você pode voar à vontade, mas existe um <b>limite de altura</b> para não se perder do mapa.</li>
+    <li>Não tem como perder: vá no seu ritmo. Se travar, toque no <b>💡</b> para receber uma dica.</li>
+  </ul>
   <h3>No computador</h3>
   <div class="keys"><kbd>W / S</kbd><span>andar para frente / para trás (ou as setas)</span>
   <kbd>A / D</kbd><span>virar a anjinha (a câmera vira junto)</span>
-  <kbd>Espaço</kbd><span>pular. No ar, aperte de novo para bater as asas (até 3 vezes)</span>
-  <kbd>Segurar Espaço</kbd><span>planar devagarinho</span>
+  <kbd>Espaço ou Enter</kbd><span>pular e voar: cada toque bate as asas e sobe mais</span>
+  <kbd>Segurar</kbd><span>planar devagarinho</span>
   <kbd>E</kbd><span>conversar / interagir</span>
   <kbd>Arrastar o mouse</kbd><span>também vira a anjinha</span>
   <kbd>Esc</kbd><span>pausar</span></div>
   <h3>No celular</h3>
-  <p>Arraste o dedo no <b>lado esquerdo</b> da tela para andar e virar, ou arraste no <b>lado direito</b> para virar a anjinha (a câmera sempre acompanha). O botão de <b>asas</b> pula e voa (segure para planar). Quando aparecer um botão dourado, toque nele para conversar.</p>
-  <p>💡 A seta dourada no alto da tela aponta para o próximo objetivo. As <b>estrelas</b> são segredos: procure nos telhados e no alto!</p>`;
+  <p>Arraste o dedo no <b>lado esquerdo</b> da tela para andar e virar, ou arraste no <b>lado direito</b> para virar. O botão de <b>asas</b> pula e voa (cada toque sobe mais; segure para planar). Quando aparecer um botão dourado, toque nele para conversar.</p>
+  <h3>Botões</h3>
+  <p><b>?</b> abre estas regras · <b>💡</b> dá uma dica da missão atual · <b>❚❚</b> pausa. O <b>modo daltônico</b> fica no menu e na pausa.</p>`;
 $('bHow').onclick = () => ui.modal(HOW);
-$('modalClose').onclick = () => ui.hide('modal');
+let modalPaused = false;
+$('modalClose').onclick = () => { ui.hide('modal'); if (modalPaused) { modalPaused = false; mode = 'play'; actBlock = time + 0.3; } };
+$('bRules').onclick = () => { if (mode !== 'play') return; mode = 'pause'; modalPaused = true; ui.modal(HOW); };
+$('bHint').onclick = () => {
+  if (mode !== 'play') return;
+  const h = chapter && chapter.hint ? chapter.hint() : null;
+  ui.toast('💡 ' + (h || 'Siga a seta dourada e converse com os moradores!'), 7);
+};
+// Modo daltônico: corrige as cores da cena (daltonização) e reforça contornos da interface
+const CB = [['off', 'desligado'], ['deut', 'deuteranopia (verde)'], ['prot', 'protanopia (vermelho)'], ['trit', 'tritanopia (azul)']];
+const SIM = {
+  prot: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
+  deut: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]],
+  trit: [[1.255528, -0.076749, -0.178779], [-0.078411, 0.930809, 0.147602], [0.004733, 0.691367, 0.3039]],
+};
+const SHIFT = { prot: [[0, 0, 0], [0.7, 1, 0], [0.7, 0, 1]], deut: [[0, 0, 0], [0.7, 1, 0], [0.7, 0, 1]], trit: [[1, 0, 0.7], [0, 1, 0.7], [0, 0, 0]] };
+for (const k of ['prot', 'deut', 'trit']) {
+  const S = SIM[k], D = SHIFT[k], out = [];
+  for (let i = 0; i < 3; i++) {
+    const row = [];
+    for (let j = 0; j < 3; j++) { let v = i === j ? 1 : 0; for (let m = 0; m < 3; m++) v += D[i][m] * ((m === j ? 1 : 0) - S[m][j]); row.push(+v.toFixed(4)); }
+    out.push(row.join(' ') + ' 0 0');
+  }
+  document.getElementById('m-' + k).setAttribute('values', out.join(' ') + ' 0 0 0 1 0');
+}
+function applyCB() {
+  const k = save.cb || 'off', label = 'Modo daltônico: ' + CB.find(c => c[0] === k)[1];
+  $('c').style.filter = k === 'off' ? '' : `url(#cb-${k})`;
+  document.body.classList.toggle('cb', k !== 'off');
+  $('bCB').textContent = label; $('pCB').textContent = label;
+}
+const cycleCB = () => { const i = CB.findIndex(c => c[0] === (save.cb || 'off')); save.cb = CB[(i + 1) % CB.length][0]; persist(); applyCB(); };
+$('bCB').onclick = cycleCB; $('pCB').onclick = cycleCB;
+applyCB();
 $('bSound').onclick = () => {
   initAudio(); save.sound = !save.sound; setSound(save.sound); persist(); renderMenu();
 };

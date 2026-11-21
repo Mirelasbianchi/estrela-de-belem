@@ -10,7 +10,7 @@
 <meta name="description" content="Um jogo de Natal em 3D: acompanhe a história de Jesus da Anunciação até a Noite Santa.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
 { "imports": {
@@ -21,6 +21,11 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="cb-prot" color-interpolation-filters="sRGB"><feColorMatrix id="m-prot" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+  <filter id="cb-deut" color-interpolation-filters="sRGB"><feColorMatrix id="m-deut" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+  <filter id="cb-trit" color-interpolation-filters="sRGB"><feColorMatrix id="m-trit" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+</defs></svg>
 
 <!-- Carregando -->
 <div id="loading" class="screen">
@@ -39,7 +44,8 @@
       <button class="btn" id="bPlay">Começar a jornada</button>
       <button class="btn ghost" id="bChapters">Capítulos</button>
       <button class="btn ghost" id="bPresepio">Meu Presépio</button>
-      <button class="btn ghost" id="bHow">Como jogar</button>
+      <button class="btn ghost" id="bHow">Regras e controles</button>
+      <button class="btn ghost small" id="bCB">Modo daltônico: desligado</button>
     </div>
   </div>
   <button class="icon-btn corner" id="bSound" aria-label="Som">♪</button>
@@ -58,7 +64,11 @@
 <div id="hud" class="hidden">
   <div id="quests"></div>
   <div id="stars"><span class="st">★</span> <span id="starCount">0/0</span></div>
-  <button class="icon-btn" id="bPause" aria-label="Pausar">❚❚</button>
+  <div id="hudBtns">
+    <button class="icon-btn" id="bHint" aria-label="Dica" title="Dica">💡</button>
+    <button class="icon-btn" id="bRules" aria-label="Regras do jogo" title="Regras do jogo">?</button>
+    <button class="icon-btn" id="bPause" aria-label="Pausar" title="Pausar">❚❚</button>
+  </div>
   <div id="arrow"><div class="arrow-shape"></div></div>
 </div>
 
@@ -102,7 +112,8 @@
     <h2>Pausado</h2>
     <button class="btn" id="pResume">Continuar</button>
     <button class="btn ghost" id="pSound">Som: ligado</button>
-    <button class="btn ghost" id="pHow">Como jogar</button>
+    <button class="btn ghost" id="pHow">Regras e controles</button>
+    <button class="btn ghost" id="pCB">Modo daltônico: desligado</button>
     <button class="btn ghost" id="pMenu">Menu principal</button>
   </div>
 </div>

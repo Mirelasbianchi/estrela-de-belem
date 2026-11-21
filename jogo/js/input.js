@@ -10,12 +10,12 @@ export function initInput(canvas) {
   if (input.touch) document.body.classList.add('touch');
   addEventListener('keydown', e => {
     const k = e.code; input.keys.add(k);
-    if (k === 'Space') { if (!e.repeat) input.jumpPressed = true; input.jumpHeld = true; e.preventDefault(); }
-    if ((k === 'KeyE' || k === 'Enter') && !e.repeat) input.actPressed = true;
+    if (k === 'Space' || k === 'Enter') { if (!e.repeat) input.jumpPressed = true; input.jumpHeld = true; e.preventDefault(); }
+    if (k === 'KeyE' && !e.repeat) input.actPressed = true;
     if (k === 'Escape' || k === 'KeyP') input.escPressed = true;
     if (k.startsWith('Arrow')) e.preventDefault();
   });
-  addEventListener('keyup', e => { input.keys.delete(e.code); if (e.code === 'Space') input.jumpHeld = false; });
+  addEventListener('keyup', e => { input.keys.delete(e.code); if (e.code === 'Space' || e.code === 'Enter') input.jumpHeld = false; });
   addEventListener('blur', () => { input.keys.clear(); input.jumpHeld = false; });
 
   const joy = document.getElementById('joy'), knob = document.getElementById('knob');
