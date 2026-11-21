@@ -8,7 +8,7 @@ Jogo 3D de Natal para navegador (celular e computador) que conta a história de 
 ## Rodar localmente
 
 ```bash
-python -m http.server 8123
+python serve.py
 ```
 
 Depois abra http://localhost:8123/jogo/
