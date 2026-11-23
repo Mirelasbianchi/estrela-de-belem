@@ -10,9 +10,11 @@ import { save, persist } from './save.js';
 import { CHAPTERS, CANDLE_CHAPTERS, CHRIST_CANDLE } from './chapters.js';
 import * as ch1 from './chapters/ch1.js';
 import * as ch2 from './chapters/ch2.js';
+import * as ch3 from './chapters/ch3.js';
+import * as ch4 from './chapters/ch4.js';
 
 // Um capítulo novo por vez: adicione aqui e marque ready: true em chapters.js
-const BUILDERS = { 1: ch1, 2: ch2 };
+const BUILDERS = { 1: ch1, 2: ch2, 3: ch3, 4: ch4 };
 const $ = id => document.getElementById(id);
 
 // ---------- Renderer ----------

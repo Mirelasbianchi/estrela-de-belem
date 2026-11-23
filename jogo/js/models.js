@@ -69,7 +69,7 @@ export function animateQuad(g, t, dt, speed = 0) {
 }
 
 // ---------- Manjedoura e o Menino Jesus ----------
-export function babyModel() {
+export function babyModel({ halo: withHalo = true } = {}) {
   const g = new THREE.Group();
   const cloth = smat('#fbf7ee', { roughness: 0.85 }), skin = smat('#f3c9a6', { roughness: 0.6, envMapIntensity: 0.3 });
   const wrap = M(new THREE.CapsuleGeometry(0.13, 0.3, 6, 16), cloth, 0, 0.13, -0.05); wrap.rotation.x = Math.PI / 2; g.add(wrap);
@@ -82,7 +82,7 @@ export function babyModel() {
   const ch = new THREE.MeshStandardMaterial({ color: '#ff9a8f', transparent: true, opacity: 0.4, depthWrite: false });
   for (const sx of [-1, 1]) { const c = M(new THREE.SphereGeometry(0.03, 8, 6), ch, sx * 0.075, 0.3, 0.2); c.scale.y = 0.4; g.add(c); }
   const halo = M(new THREE.TorusGeometry(0.14, 0.018, 8, 28), smat('#ffd75e', { emissive: '#ffbf2e', emissiveIntensity: 1.6, metalness: 0.5, roughness: 0.3 }), 0, 0.22, 0.4);
-  halo.rotation.x = -0.25; g.add(halo);
+  halo.rotation.x = -0.25; if (withHalo) g.add(halo);
   return g;
 }
 export function mangerModel(withBaby = false) {
@@ -168,6 +168,16 @@ export function itemModel(kind) {
   } else if (kind === 'hay') {
     g.add(M(RB(0.9, 0.5, 0.55, 0.12), smat('#e3bf55', { roughness: 1 }), 0, 0.25, 0));
     for (const x of [-0.25, 0.25]) g.add(M(RB(0.05, 0.52, 0.57, 0.02), smat('#8a5a3b'), x, 0.25, 0));
+  } else if (kind === 'wood') {
+    const w = smat('#7a5233'), cut = smat('#e2b98a');
+    for (const [x, y, z] of [[-0.14, 0.12, 0], [0.14, 0.12, 0], [0, 0.34, 0]]) {
+      const l = M(new THREE.CylinderGeometry(0.12, 0.12, 0.9, 10), w, x, y, z); l.rotation.x = Math.PI / 2; g.add(l);
+      for (const e of [-0.455, 0.455]) { const c = M(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 10), cut, x, y, z + e); c.rotation.x = Math.PI / 2; g.add(c); }
+    }
+    const rope = M(new THREE.TorusGeometry(0.27, 0.025, 6, 16), smat('#c9a46a'), 0, 0.2, 0); g.add(rope);
+  } else if (kind === 'carrot') {
+    const c = M(new THREE.ConeGeometry(0.1, 0.5, 12), smat('#f08a2a', { roughness: 0.6 }), 0, 0.3, 0); c.rotation.z = Math.PI; g.add(c);
+    for (const a of [-0.4, 0, 0.4]) { const l = M(new THREE.CapsuleGeometry(0.025, 0.2, 3, 6), smat('#4f9a48'), Math.sin(a) * 0.06, 0.65, 0); l.rotation.z = a; g.add(l); }
   } else if (kind === 'lantern') {
     g.add(M(RB(0.3, 0.4, 0.3, 0.05), smat('#ffe6a8', { emissive: '#ffb84d', emissiveIntensity: 1.6 }), 0, 0.25, 0));
     const cap = M(new THREE.ConeGeometry(0.24, 0.18, 4), smat('#3a2f2a'), 0, 0.54, 0); cap.rotation.y = Math.PI / 4; g.add(cap);
@@ -206,4 +216,43 @@ export function bigStarModel() {
 export function lightBeam(h = 40, r0 = 0.8, r1 = 3) {
   return new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 20, 1, true),
     new THREE.MeshBasicMaterial({ color: '#ffe9b0', transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+}
+
+// ---------- Fogueira de São João (grande) ----------
+export function bonfireModel() {
+  const g = new THREE.Group();
+  const stone = smat('#8a8698', { roughness: 0.9 }), wood = smat('#6b4529', { roughness: 0.8 });
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; const s = M(new THREE.SphereGeometry(0.3, 10, 8), stone, Math.cos(a) * 1.5, 0.12, Math.sin(a) * 1.5); s.scale.y = 0.65; g.add(s); }
+  // toras em pé, formando uma "cabaninha" (como nas festas juninas)
+  for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; const l = M(new THREE.CylinderGeometry(0.09, 0.12, 2.6, 8), wood, Math.cos(a) * 0.55, 1.15, Math.sin(a) * 0.55); l.rotation.set(Math.sin(a) * 0.3, 0, -Math.cos(a) * 0.3); g.add(l); }
+  for (let k = 0; k < 3; k++) for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + k * 0.4; const l = M(new THREE.CylinderGeometry(0.1, 0.1, 1.8, 8), wood, Math.cos(a) * 0.8, 0.2 + k * 0.22, Math.sin(a) * 0.8); l.rotation.set(Math.PI / 2, 0, 0); l.rotation.y = a + Math.PI / 2; l.rotation.order = 'YXZ'; g.add(l); }
+  compact(g);
+  const flame = new THREE.Group(); flame.visible = false; g.add(flame);
+  const fl = [];
+  for (const [x, z, r, h, c, e] of [[0, 0, 0.9, 2.6, '#ff9a2e', '#ff6a1a'], [0.3, 0.2, 0.55, 2.0, '#ffc23e', '#ff9a1a'], [-0.3, -0.1, 0.55, 1.9, '#ffc23e', '#ff9a1a'], [0, 0, 0.4, 1.5, '#fff1a8', '#ffe066']]) {
+    const f = M(new THREE.ConeGeometry(r, h, 16), smat(c, { emissive: e, emissiveIntensity: 2.4 }), x, h / 2 + 0.3, z); flame.add(f); fl.push(f);
+  }
+  const fg = glow('#ff9a3a', 12, 0.8); fg.position.y = 1.6; flame.add(fg);
+  // fagulhas subindo
+  const n = 60, sp = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) sp.set([(Math.random() - 0.5) * 1.5, Math.random() * 6, (Math.random() - 0.5) * 1.5], i * 3);
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const dot = document.createElement('canvas'); dot.width = dot.height = 32;
+  const dc = dot.getContext('2d'), rg = dc.createRadialGradient(16, 16, 0, 16, 16, 16);
+  rg.addColorStop(0, 'rgba(255,240,200,1)'); rg.addColorStop(0.35, 'rgba(255,170,60,0.9)'); rg.addColorStop(1, 'rgba(255,90,20,0)');
+  dc.fillStyle = rg; dc.fillRect(0, 0, 32, 32);
+  const sparks = new THREE.Points(sg, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dot), color: '#ffb35a', size: 0.22, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  flame.add(sparks);
+  const light = new THREE.PointLight('#ffa04a', 0, 40, 1.4); light.position.y = 2.2; g.add(light);
+  g.userData = { flame, light, fl, sparks };
+  return g;
+}
+export function lightBonfire(b) { b.userData.flame.visible = true; b.userData.light.intensity = 60; }
+export function animateBonfire(b, t, dt) {
+  const u = b.userData; if (!u.flame.visible) return;
+  u.fl.forEach((f, i) => { f.scale.set(1 + Math.sin(t * (11 + i)) * 0.07, 1 + Math.sin(t * (8 + i * 2) + i) * 0.14, 1 + Math.cos(t * (12 + i)) * 0.07); });
+  u.light.intensity = 55 + Math.sin(t * 15) * 8;
+  const p = u.sparks.geometry.attributes.position, a = p.array;
+  for (let i = 0; i < a.length; i += 3) { a[i + 1] += dt * (1.6 + (i % 5) * 0.4); a[i] += Math.sin(t * 3 + i) * dt * 0.3; if (a[i + 1] > 7) { a[i + 1] = 0.8; a[i] = (Math.random() - 0.5) * 1.2; a[i + 2] = (Math.random() - 0.5) * 1.2; } }
+  p.needsUpdate = true;
 }

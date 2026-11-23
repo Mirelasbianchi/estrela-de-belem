@@ -132,7 +132,7 @@ export function build(ctx) {
           { who: JOSE, text: 'Você achou todas! Que anjinho bondoso. Obrigado!' },
           { who: JOSE, text: 'Agora preciso descansar... meu coração está pesado. Você me acompanha até minha casa? É pertinho, a leste do poço.' },
         ]);
-      } catch (e) { return; }
+      } catch (e) { K.err(e); return; }
       K.stage = 2; jose.static = true; joseFollow.on = true; K.refresh(); ctx.lock(false);
     },
   });
@@ -151,7 +151,7 @@ export function build(ctx) {
       });
       K.stage = 1; K.play();
       ui.toast('Vá até a oficina de José, no fim do caminho. Siga a seta dourada!', 5);
-    } catch (e) { }
+    } catch (e) { K.err(e); }
   }
 
   const gab = gabrielModel(); gab.visible = false; scene.add(gab);
@@ -204,7 +204,7 @@ export function build(ctx) {
         ref: 'Mt 1,24',
         reflect: 'José não disse nenhuma palavra na Bíblia, mas confiou e obedeceu. Quando você não entender alguma coisa, pode confiar em Deus como José confiou: Ele sempre cuida de nós.',
       });
-    } catch (e) { }
+    } catch (e) { K.err(e); }
   }
 
   function update(dt, t, playing) {

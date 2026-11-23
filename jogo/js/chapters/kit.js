@@ -15,6 +15,8 @@ export function kit(ctx, n) {
   K.say = lines => K.step(ui.say(lines));
   K.wait = s => K.step(ctx.wait(s));
   K.refresh = () => {};
+  // erros de verdade aparecem no console; o aviso de capítulo encerrado é ignorado
+  K.err = e => { if (!(e && /encerrado/.test(e.message))) console.error(e); };
 
   // Coloca um modelo no chão
   K.place = (m, x, z, ry = 0, dy = 0) => { m.position.set(x, H(x, z) + dy, z); m.rotation.y = ry; scene.add(m); return m; };

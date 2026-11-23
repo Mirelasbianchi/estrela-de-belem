@@ -17,4 +17,6 @@ Depois abra http://localhost:8123/jogo/
 
 - Capítulo 1 · A Anunciação: jogável
 - Capítulo 2 · O Sonho de José: jogável
-- Capítulos 3 a 7: em breve (um por dia)
+- Capítulo 3 · A Visitação (com a fogueira de São João): jogável
+- Capítulo 4 · O Decreto de César: jogável
+- Capítulos 5 a 7: em breve (um por dia)
