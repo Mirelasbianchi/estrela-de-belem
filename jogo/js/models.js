@@ -112,7 +112,7 @@ export function stableModel(world, x, z, rot = 0) {
   g.add(M(RB(W + 0.4, 0.2, 0.25, 0.05), dark, 0, Hh + 0.3, D / 2 - 0.1));
   for (const s of [-1, 1]) {
     const r = M(RB(W + 1.2, 0.35, D / 2 + 0.9, 0.12), smat('#c9a25a', { roughness: 1 }), 0, Hh + 1.0, s * (D / 4 + 0.2)); r.rotation.x = s * 0.42; g.add(r);
-    const sn = M(RB(W + 1.3, 0.3, D / 2 + 0.6, 0.15), snowM, 0, Hh + 1.27, s * (D / 4 + 0.1)); sn.rotation.x = s * 0.42; g.add(sn);
+    const sn = M(RB(W + 1.3, 0.3, D / 2 + 0.6, 0.15), snowM, 0, Hh + 1.27, s * (D / 4 + 0.1)); sn.rotation.x = s * 0.42; if (world.snowy) g.add(sn);
   }
   const floor = M(new THREE.CylinderGeometry(2.8, 3, 0.12, 24), smat('#d9b45a', { roughness: 1 }), 0, 0.05, 0); floor.scale.z = 0.75; g.add(floor);
   world.static.add(g); g.updateMatrixWorld(true);
@@ -178,6 +178,14 @@ export function itemModel(kind) {
   } else if (kind === 'carrot') {
     const c = M(new THREE.ConeGeometry(0.1, 0.5, 12), smat('#f08a2a', { roughness: 0.6 }), 0, 0.3, 0); c.rotation.z = Math.PI; g.add(c);
     for (const a of [-0.4, 0, 0.4]) { const l = M(new THREE.CapsuleGeometry(0.025, 0.2, 3, 6), smat('#4f9a48'), Math.sin(a) * 0.06, 0.65, 0); l.rotation.z = a; g.add(l); }
+  } else if (kind === 'stone') {
+    const st = M(new THREE.CylinderGeometry(0.42, 0.48, 0.22, 14), smat('#b5aa98', { roughness: 0.85 }), 0, 0.11, 0); st.scale.z = 0.8; g.add(st);
+    const t = M(new THREE.SphereGeometry(0.4, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), smat('#c9bfae', { roughness: 0.85 }), 0, 0.2, 0); t.scale.set(1, 0.25, 0.8); g.add(t);
+  } else if (kind === 'key') {
+    const gold = smat('#e8bf55', { metalness: 0.7, roughness: 0.3 });
+    const ring = M(new THREE.TorusGeometry(0.14, 0.04, 8, 18), gold, 0, 0.55, 0); g.add(ring);
+    g.add(M(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8), gold, 0, 0.17, 0));
+    for (const y of [0.0, 0.1]) g.add(M(RB(0.14, 0.05, 0.05, 0.01), gold, 0.08, y, 0));
   } else if (kind === 'lantern') {
     g.add(M(RB(0.3, 0.4, 0.3, 0.05), smat('#ffe6a8', { emissive: '#ffb84d', emissiveIntensity: 1.6 }), 0, 0.25, 0));
     const cap = M(new THREE.ConeGeometry(0.24, 0.18, 4), smat('#3a2f2a'), 0, 0.54, 0); cap.rotation.y = Math.PI / 4; g.add(cap);
@@ -188,17 +196,17 @@ export function itemModel(kind) {
 }
 
 // Obstáculo na estrada: monte de pedras ou tronco caído com neve
-export function obstacleModel(kind = 'rocks') {
+export function obstacleModel(kind = 'rocks', snowy = true) {
   const g = new THREE.Group();
   if (kind === 'rocks') {
     const st = smat('#8e93ad', { roughness: 0.85 });
     for (const [x, y, z, r] of [[-0.6, 0.35, 0, 0.55], [0.5, 0.3, 0.2, 0.5], [0, 0.75, 0, 0.45], [0.1, 0.3, -0.5, 0.42], [-0.2, 0.25, 0.6, 0.35]]) { const b = M(new THREE.IcosahedronGeometry(r, 1), st, x, y, z); b.scale.y = 0.8; g.add(b); }
-    const sn = M(new THREE.SphereGeometry(0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), smat('#f4f7ff'), 0, 1.0, 0); sn.scale.y = 0.4; g.add(sn);
+    const sn = M(new THREE.SphereGeometry(0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), smat('#f4f7ff'), 0, 1.0, 0); sn.scale.y = 0.4; if (snowy) g.add(sn);
   } else {
     const w = smat('#6b4529');
     const t = M(new THREE.CylinderGeometry(0.22, 0.28, 3.4, 12), w, 0, 0.3, 0); t.rotation.z = Math.PI / 2; g.add(t);
     for (const [x, a] of [[-0.8, 0.7], [0.4, -0.6], [1.1, 0.5]]) { const b = M(new THREE.CylinderGeometry(0.06, 0.09, 1.0, 8), w, x, 0.6, 0.1); b.rotation.z = a; g.add(b); }
-    g.add(M(RB(3.2, 0.12, 0.45, 0.05), smat('#f4f7ff'), 0, 0.55, 0));
+    if (snowy) g.add(M(RB(3.2, 0.12, 0.45, 0.05), smat('#f4f7ff'), 0, 0.55, 0));
     for (const [x, z] of [[-1.2, 0.3], [0.9, -0.3]]) g.add(M(new THREE.SphereGeometry(0.3, 10, 8), smat('#2c6e43'), x, 0.6, z));
   }
   return compact(g);

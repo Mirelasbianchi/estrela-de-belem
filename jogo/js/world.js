@@ -34,6 +34,8 @@ export function terrainHeight(x, z) {
     const d2 = (x - hx) ** 2 + (z - hz) ** 2;
     h += pr ? hh * (1 - smooth(pr, pr + Math.sqrt(w), Math.sqrt(d2))) : hh * Math.exp(-d2 / w);
   }
+  // riacho: [z central, profundidade, largura², amplitude da curva, frequência]
+  if (T.river) { const [rz, dep, rw, amp = 0, fr = 0.1] = T.river; const zc = rz + Math.sin(x * fr) * amp; h -= dep * Math.exp(-((z - zc) ** 2) / rw); }
   h += smooth(T.ring, T.ring + 34, r) * 11;
   return h;
 }
@@ -248,6 +250,12 @@ const SKIES = {
     hemi: ['#ffe8c8', '#7a6a4a', 1.55], sunL: ['#ffd29a', 2.6], fill: 0.7, stars: 0, starSize: 1.8, mount: '#9a8a78', mountTop: '#d9c6a6' },
   sunny: { bg: '#9cc6f0', fog: '#cfe2f5', fogNear: 45, fogFar: 240, top: '#2a6ad0', mid: '#7fb6f0', warm: '#fff3dc', cool: '#d6e8f8', sun: [-0.4, 0.6, -0.5], sunC: '#fff4cc',
     hemi: ['#eef5ff', '#7a7a58', 1.7], sunL: ['#fff2dc', 2.8], fill: 0.8, stars: 0, starSize: 1.8, mount: '#8a92a8', mountTop: '#c9c2b4' },
+  desert: { bg: '#eac48c', fog: '#efd3a6', fogNear: 45, fogFar: 230, top: '#3a74c4', mid: '#94bde6', warm: '#ffd9a0', cool: '#f4e2c4', sun: [-0.55, 0.42, -0.6], sunC: '#fff0c0',
+    hemi: ['#fff0d8', '#8a6a44', 1.65], sunL: ['#ffe4b8', 2.8], fill: 0.7, stars: 0, starSize: 1.8, mount: '#b08a62', mountTop: '#e2c49a' },
+  sunset: { bg: '#d98a6a', fog: '#e09a78', fogNear: 40, fogFar: 220, top: '#2a2f7a', mid: '#8a5fa8', warm: '#ff9a5a', cool: '#c98aa0', sun: [-0.8, 0.08, -0.6], sunC: '#ff7a3a',
+    hemi: ['#ffd0b0', '#5a3a5a', 1.4], sunL: ['#ffa06a', 2.2], fill: 0.6, stars: 0.25, starSize: 1.8, mount: '#7a5a7a', mountTop: '#c99a9a' },
+  holy: { bg: '#0d1a4a', fog: '#1f2f6e', fogNear: 34, fogFar: 200, top: '#030826', mid: '#16267a', warm: '#6a5aa8', cool: '#24357e', sun: [0.2, 0.45, -0.87], sunC: '#fff2c8',
+    hemi: ['#a9b8f0', '#2a3268', 0.8], sunL: ['#d8deff', 0.95], fill: 0.35, stars: 1, starSize: 2.6, mount: '#2e3d80' },
   night: { bg: '#0b1435', fog: '#1d2b5e', fogNear: 30, fogFar: 180, top: '#02061a', mid: '#0e1c4f', warm: '#33407e', cool: '#1f2c66', sun: [0.35, 0.3, -0.88], sunC: '#c9d6ff',
     hemi: ['#8ea3e6', '#232a5a', 0.85], sunL: ['#b4c4ff', 1.0], fill: 0.35, stars: 1, starSize: 2.2, mount: '#2c3a72' },
 };
@@ -331,7 +339,8 @@ export class World {
 
     const geo = new THREE.PlaneGeometry(280, 280, 160, 160); geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position; const col = new Float32Array(pos.count * 3);
-    const snow = new THREE.Color(SNOWY ? '#eef3ff' : '#8fbb5e'), snow2 = new THREE.Color(SNOWY ? '#eef3ff' : '#c2bd6a'), dirt = new THREE.Color(SNOWY ? '#c9b69c' : '#d9c091'), tmp = new THREE.Color();
+    const GR = { snow: ['#eef3ff', '#eef3ff', '#c9b69c'], grass: ['#8fbb5e', '#c2bd6a', '#d9c091'], sand: ['#dcb879', '#c99c5e', '#f0d9a6'], meadow: ['#6f9e4e', '#9bb35a', '#cdb48a'] }[ground] || ['#8fbb5e', '#c2bd6a', '#d9c091'];
+    const snow = new THREE.Color(GR[0]), snow2 = new THREE.Color(GR[1]), dirt = new THREE.Color(GR[2]), tmp = new THREE.Color();
     const segDist = (x, z) => {
       let best = 1e9;
       for (let i = 0; i < path.length - 1; i++) {

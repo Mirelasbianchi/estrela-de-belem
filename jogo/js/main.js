@@ -8,13 +8,17 @@ import { ui, wreathSVG } from './ui.js';
 import { initAudio, sfx, startMusic, stopMusic, setSound } from './audio.js';
 import { save, persist } from './save.js';
 import { CHAPTERS, CANDLE_CHAPTERS, CHRIST_CANDLE } from './chapters.js';
+import { presepioSVG, downloadCard } from './presepio.js';
 import * as ch1 from './chapters/ch1.js';
 import * as ch2 from './chapters/ch2.js';
 import * as ch3 from './chapters/ch3.js';
 import * as ch4 from './chapters/ch4.js';
+import * as ch5 from './chapters/ch5.js';
+import * as ch6 from './chapters/ch6.js';
+import * as ch7 from './chapters/ch7.js';
 
 // Um capítulo novo por vez: adicione aqui e marque ready: true em chapters.js
-const BUILDERS = { 1: ch1, 2: ch2, 3: ch3, 4: ch4 };
+const BUILDERS = { 1: ch1, 2: ch2, 3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7 };
 const $ = id => document.getElementById(id);
 
 // ---------- Renderer ----------
@@ -110,8 +114,15 @@ function updateCam(dt) {
     cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, cam._snap ? 1 : 1 - Math.exp(-dt * 14));
   } else if (cam.mode === 'orbit') {
     cam.orbitA += dt * 0.045;
-    cam.tPos.set(Math.sin(cam.orbitA) * 46, 17, Math.cos(cam.orbitA) * 46 - 6);
-    cam.tLook.set(0, 3, -8);
+    const mv = chapter && chapter.menuView;
+    if (mv) {
+      // cena final do presépio: a câmera passeia devagar na frente da gruta
+      const a = mv.yaw + Math.sin(cam.orbitA * 1.6) * mv.arc;
+      cam.tPos.set(mv.c.x + Math.sin(a) * mv.r, mv.c.y + mv.h, mv.c.z + Math.cos(a) * mv.r); cam.tLook.copy(mv.look);
+    } else {
+      cam.tPos.set(Math.sin(cam.orbitA) * 46, 17, Math.cos(cam.orbitA) * 46 - 6);
+      cam.tLook.set(0, 3, -8);
+    }
     const k = cam._snap ? 1 : 1 - Math.exp(-dt * 1.5);
     cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   } else {
@@ -132,7 +143,9 @@ function disposeScene(s) {
   s.traverse(o => { if (o.geometry) o.geometry.dispose(); });
 }
 
-function buildChapter(n) {
+const journeyDone = () => save.completed.includes(7) && !!BUILDERS[7];
+const menuChapter = () => (journeyDone() ? 7 : 1);
+function buildChapter(n, menu = false) {
   disposeScene(scene);
   if (activeCtx) activeCtx.alive = false;
   tweens.length = 0;
@@ -149,7 +162,7 @@ function buildChapter(n) {
     lock(v) { locked = v; if (!v) actBlock = time + 0.35; if (v) ui.hidePrompt(); },
     finish: next => finishChapter(n, next),
     get time() { return time; },
-    alive: true,
+    alive: true, menu,
   };
   activeCtx = ctx;
   window.__dbg = { ctx, player, world, cam, get mode() { return mode; } };
@@ -173,7 +186,7 @@ async function finishChapter(n, next) {
   ui.hide('hud'); ui.hide('touch'); ui.hidePrompt();
   await ui.fade(1, 0.8);
   if (next && BUILDERS[next]) { playChapter(next); return; }
-  buildChapter(1);
+  buildChapter(menuChapter(), true);
   enterMenu();
   await ui.fade(0, 1.2);
 }
@@ -192,7 +205,9 @@ function renderMenu() {
   const n = lit.filter(Boolean).length;
   $('wreathCaption').textContent = n === 0 ? 'Coroa do Advento · conclua capítulos para acender as velas'
     : `Coroa do Advento · ${n} de 4 velas acesas`;
-  $('bPlay').textContent = save.completed.length ? 'Continuar a jornada' : 'Começar a jornada';
+  const done = journeyDone();
+  $('bPlay').textContent = done ? 'Ver meu presépio ✦' : save.completed.length ? 'Continuar a jornada' : 'Começar a jornada';
+  $('menuDone').classList.toggle('hidden', !done);
   $('bSound').classList.toggle('off', !save.sound);
 }
 
@@ -207,13 +222,21 @@ $('bPlay').onclick = () => {
   else {
     initAudio();
     const soon = CHAPTERS.find(c => !c.ready);
-    ui.modal(soon ? `<h2>Até aqui, tudo concluído!</h2>
-      <p>Você terminou todos os capítulos disponíveis. O <b>Capítulo ${soon.n} · ${soon.title}</b> chega em breve.</p>
-      <p>Enquanto isso, que tal voltar e encontrar todas as estrelas escondidas?</p>` : `<h2>Feliz Natal! 🌟</h2>
-      <p>Você completou toda a jornada, da Anunciação até a Noite Santa, e o seu presépio está completo.</p>
-      <p>Que tal voltar aos capítulos e encontrar todas as estrelas escondidas?</p>
-      <div class="panel-actions"><button class="btn" id="replay1">Escolher um capítulo</button></div>`);
+    if (soon) {
+      ui.modal(`<h2>Até aqui, tudo concluído!</h2>
+        <p>Você terminou todos os capítulos disponíveis. O <b>Capítulo ${soon.n} · ${soon.title}</b> chega em breve.</p>
+        <p>Enquanto isso, que tal voltar e encontrar todas as estrelas escondidas?</p>`);
+      return;
+    }
+    const all = CHAPTERS.map(c => c.n), stars = all.reduce((a, c) => a + (save.stars[c] || 0), 0), total = all.reduce((a, c) => a + ((save.totals || {})[c] || 18), 0);
+    ui.modal(`<h2>Feliz Natal! 🌟</h2>
+      <div class="presepio">${presepioSVG(all, 0, { pop: true })}</div>
+      <p style="text-align:center">Você completou toda a jornada, da Anunciação até a Noite Santa, e o seu presépio está completo.</p>
+      <div class="fin-stats"><span>✦ 7/7 peças</span><span>★ ${stars}/${total} estrelas</span></div>
+      <div class="cert-actions"><button class="btn" id="dlCard">Baixar meu cartão de Natal 🖼️</button><button class="btn ghost" id="replay1">Jogar um capítulo de novo</button></div>
+      <p style="text-align:center"><small>${stars < total ? `Faltam ${total - stars} estrelas escondidas. Elas estão esperando por você!` : 'Você achou todas as estrelas! 🌟'}</small></p>`);
     $('replay1').onclick = () => $('bChapters').onclick();
+    $('dlCard').onclick = async () => { const b = $('dlCard'); b.disabled = true; b.textContent = 'Preparando...'; await downloadCard({ name: save.name || '', stars, total }); b.disabled = false; b.textContent = 'Baixar de novo 🖼️'; };
   }
 };
 $('bChapters').onclick = () => {
@@ -231,6 +254,8 @@ $('bPresepio').onclick = () => {
   initAudio();
   ui.modal(`<h2>Meu Presépio</h2>
     <p style="text-align:center;margin-top:0">Cada capítulo concluído traz uma peça. Na Noite Santa, o Menino Jesus chega à manjedoura.</p>
+    <div class="presepio">${presepioSVG(save.pieces)}</div>
+    <p class="pp-caption" style="text-align:center">${save.pieces.length} de 7 peças</p>
     <div class="pieces">` + CHAPTERS.map(c => {
       const got = save.pieces.includes(c.n);
       return `<div class="piece ${got ? 'got' : ''}"><div class="ic">${got ? '✦' : '?'}</div><div class="n">${got ? c.piece : '???'}</div><div class="c">Capítulo ${c.n}</div></div>`;
@@ -311,7 +336,7 @@ $('pHow').onclick = () => ui.modal(HOW);
 $('pMenu').onclick = async () => {
   ui.hide('pause'); if (ui._cleanup) ui._cleanup(); ui.hide('card'); ui.hide('titlecard');
   stopMusic(); startMusic();
-  await ui.fade(1, 0.5); buildChapter(1); enterMenu(); ui.fade(0, 0.8);
+  await ui.fade(1, 0.5); buildChapter(menuChapter(), true); enterMenu(); ui.fade(0, 0.8);
 };
 
 // ---------- Interação ----------
@@ -362,7 +387,7 @@ function tick(dt) {
 // ---------- Início ----------
 initInput(canvas);
 setSound(save.sound);
-buildChapter(1);
+buildChapter(menuChapter(), true);
 enterMenu();
 cam.snap();
 frame();

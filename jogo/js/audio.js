@@ -107,5 +107,12 @@ export const sfx = {
       o.connect(g); g.connect(f); o.start(t); o.stop(t + dur + 0.1);
     }
   },
+  note(n, dur = 1.4, gain = 0.2) { if (!ctx) return; const t = ctx.currentTime; bell(NOTE(n), t, dur, gain); tone(NOTE(n) / 2, t, dur * 1.2, { type: 'triangle', gain: gain * 0.4, attack: 0.05 }); },
+  // "Glória" em sequência descendente, com sinos
+  gloria() {
+    if (!ctx) return; const t = ctx.currentTime;
+    const run = [['G5',1],['F5',1],['E5',1],['F5',1],['G5',1],['F5',1],['E5',1],['D5',1],['E5',1],['D5',1],['C5',1],['D5',1],['E5',1],['D5',1],['C5',1],['B4',1],['C5',2],['F5',2],['D5',2],['E5',4],['C5',6]];
+    let k = 0; for (const [n, d] of run) { bell(NOTE(n), t + k * 0.22, d * 0.3 + 0.5, 0.15); k += d; }
+  },
   glory() { if (!ctx) return; const t = ctx.currentTime; ['C5','E5','G5','C6','E6','G6','C7'].forEach((n, i) => bell(NOTE(n), t + i * 0.11, 2.2, 0.13)); },
 };

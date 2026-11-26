@@ -173,3 +173,19 @@ kbd{background:#24305e;border:1px solid #4a5a95;border-radius:6px;padding:2px 7p
   #dialog{padding:20px 18px 14px}
   #dlgText{min-height:2.4em}
 }
+
+/* Presépio desenhado (recompensa de cada capítulo e final) */
+.presepio{margin:8px auto 4px;max-width:460px}
+.presepio-svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.presepio-svg .pp{transform-box:fill-box;transform-origin:50% 100%}
+.presepio-svg .pp.fresh{animation:ppFresh 1.6s ease-in-out infinite}
+.presepio-svg .pp.pop{animation:ppPop .7s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes ppFresh{0%,100%{filter:drop-shadow(0 0 2px #ffd36b)}50%{filter:drop-shadow(0 0 14px #ffe9a0)}}
+@keyframes ppPop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.pp-caption{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.cert{border:2px solid var(--gold);border-radius:18px;padding:16px 14px;background:linear-gradient(rgba(255,227,163,.12),rgba(255,227,163,.02))}
+.cert .big{font-family:'Mountains of Christmas',serif;font-size:clamp(28px,6vw,40px);color:var(--gold2);text-shadow:0 0 18px rgba(255,200,100,.6);margin:4px 0}
+.cert input{font:inherit;font-size:16px;padding:10px 14px;border-radius:999px;border:1.5px solid rgba(255,227,163,.6);background:rgba(255,255,255,.08);color:var(--ink);text-align:center;width:min(280px,90%);margin:6px 0 2px}
+.cert-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:10px}
+.fin-stats{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:6px 0;color:var(--gold2);font-weight:800}
+.menu-done{color:var(--gold2);font-weight:800;margin:0 0 6px;text-shadow:0 0 12px rgba(255,200,100,.6)}

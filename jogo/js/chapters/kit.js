@@ -4,6 +4,7 @@ import { terrainHeight as H, person, V, animateChar, glow, rng } from '../world.
 import { itemModel, animateQuad } from '../models.js';
 import { CHAPTERS, CANDLE_CHAPTERS, CHRIST_CANDLE } from '../chapters.js';
 import { wreathSVG } from '../ui.js';
+import { presepioSVG, downloadCard } from '../presepio.js';
 
 const CANDLE_NAMES = ['da esperança', 'da paz', 'da alegria', 'do amor'];
 
@@ -88,6 +89,7 @@ export function kit(ctx, n) {
     if (!s.pieces.includes(n)) s.pieces.push(n);
     const got = K.stars ? K.stars.count : 0, total = K.stars ? K.stars.total : 0;
     s.stars[n] = Math.max(s.stars[n] || 0, got);
+    s.totals = s.totals || {}; s.totals[n] = total;
     ctx.persist();
     ui.setArrow(null); ui.setQuests([]);
     await K.step(ui.card(`
@@ -102,16 +104,50 @@ export function kit(ctx, n) {
       : n === CHRIST_CANDLE ? 'A <b>vela de Cristo</b>, branca, brilha no centro da coroa: Jesus nasceu! Feliz Natal!' : '';
     const nx = CHAPTERS[n], next = nx && nx.ready ? nx : null;
     const lit = CANDLE_CHAPTERS.map(c => s.completed.includes(c));
+    const nPieces = s.pieces.length;
     await K.step(ui.card(`
       <div class="card-kicker">Capítulo ${n} concluído</div>
-      <div class="reward-ic">✦</div>
-      <h2>Peça do presépio: ${CHAPTERS[n - 1].piece}</h2>
+      <h2>Nova peça do presépio: ${CHAPTERS[n - 1].piece}</h2>
+      <div class="presepio">${presepioSVG(s.pieces, n)}</div>
+      <p class="pp-caption">${nPieces < 7 ? `Seu presépio: <b>${nPieces} de 7</b> peças` : '<b>O presépio está completo!</b>'}</p>
       <p>Estrelas encontradas: <b>${got}/${total}</b>${got < total ? '<br><small>Jogue de novo para achar todas!</small>' : ' 🌟 Todas!'}</p>
       <div class="mini-wreath">${wreathSVG(lit, s.completed.includes(CHRIST_CANDLE))}</div>
       ${candle ? `<p>${candle}</p>` : ''}
-      <p><small>${next ? `Próximo: <b>Capítulo ${next.n} · ${next.title}</b>` : nx ? `Próximo: <b>Capítulo ${nx.n} · ${nx.title}</b> (em breve)` : 'Você completou toda a jornada, do “sim” de Maria até a Noite Santa. Veja o seu presépio completo no menu!'}</small></p>`,
-      next ? 'Próximo capítulo ▶' : 'Voltar ao menu'));
+      <p><small>${next ? `Próximo: <b>Capítulo ${next.n} · ${next.title}</b>` : nx ? `Próximo: <b>Capítulo ${nx.n} · ${nx.title}</b> (em breve)` : 'Você completou toda a jornada, do “sim” de Maria até a Noite Santa!'}</small></p>`,
+      next ? 'Próximo capítulo ▶' : n === 7 ? 'Continuar ✦' : 'Voltar ao menu'));
+    if (n === 7) await K.finale();
     ctx.finish(next ? next.n : null);
+  };
+
+  // ---------- O grande final (depois do capítulo 7) ----------
+  K.finale = async () => {
+    const s = ctx.save;
+    const all = CHAPTERS.map(c => c.n), stars = all.reduce((a, c) => a + (s.stars[c] || 0), 0), total = all.reduce((a, c) => a + ((s.totals || {})[c] || 18), 0);
+    sfx.glory();
+    await K.step(ui.card(`
+      <div class="card-kicker">A jornada está completa</div>
+      <h2>Feliz Natal! ✦</h2>
+      <div class="presepio">${presepioSVG(all, 0, { pop: true })}</div>
+      <p>Você acompanhou Maria e José do “sim” em Nazaré até a gruta de Belém, e reuniu as <b>7 peças</b> do presépio. Agora ele está completo, com o Menino Jesus na manjedoura!</p>
+      <div class="fin-stats"><span>✦ 7/7 peças</span><span>★ ${stars}/${total} estrelas</span><span>🕯️ 5/5 velas</span></div>
+      <div class="mini-wreath">${wreathSVG([true, true, true, true], true)}</div>`, 'Receber meu certificado'));
+    const html = `
+      <div class="cert">
+        <div class="card-kicker">Certificado</div>
+        <div class="big">Anjinho Mensageiro do Natal</div>
+        <p>Este certificado é de quem levou a boa notícia até o fim: <b>Jesus nasceu!</b></p>
+        <input id="certName" maxlength="28" placeholder="Escreva seu nome (opcional)" value="${(s.name || '').replace(/"/g, '')}">
+        <p><small>“Hoje nasceu para vós um Salvador, que é o Cristo Senhor.” (Lc 2,11)</small></p>
+        <div class="cert-actions"><button class="btn" id="certDl">Baixar meu cartão de Natal 🖼️</button></div>
+        <p><small>O cartão tem o seu presépio completo: dá para guardar, imprimir ou mandar para a família!</small></p>
+      </div>
+      <p><small>${stars < total ? `Ainda faltam ${total - stars} estrelas escondidas. Volte aos capítulos para achar todas!` : 'Você achou TODAS as estrelas! Que anjinho mais atento! 🌟'}</small></p>`;
+    const p = ui.card(html, 'Voltar ao menu');
+    const inp = document.getElementById('certName'), dl = document.getElementById('certDl');
+    const keep = () => { s.name = inp.value.trim(); ctx.persist(); };
+    inp.addEventListener('input', keep); inp.addEventListener('keydown', e => e.stopPropagation());
+    dl.onclick = async () => { keep(); dl.disabled = true; dl.textContent = 'Preparando...'; await downloadCard({ name: s.name, stars, total }); dl.disabled = false; dl.textContent = 'Baixar de novo 🖼️'; };
+    await K.step(p); keep();
   };
 
   // ---------- Loop ----------

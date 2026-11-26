@@ -19,4 +19,8 @@ Depois abra http://localhost:8123/jogo/
 - Capítulo 2 · O Sonho de José: jogável
 - Capítulo 3 · A Visitação (com a fogueira de São João): jogável
 - Capítulo 4 · O Decreto de César: jogável
-- Capítulos 5 a 7: em breve (um por dia)
+- Capítulo 5 · A Estrada para Belém: jogável
+- Capítulo 6 · Não Havia Lugar: jogável
+- Capítulo 7 · A Noite Santa: jogável
+
+Ao terminar o capítulo 7, o jogo mostra o presépio completo, um certificado de "Anjinho Mensageiro do Natal" com o nome do jogador e um cartão de Natal para baixar (PNG). Depois disso, o menu passa a mostrar o presépio montado.
